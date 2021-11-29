@@ -22,7 +22,7 @@ class AutoRoomBooker():
         ram_webpage = "https://ram.asimut.net"
         user_name = os.getenv("LOGIN")
         password = os.getenv("PASS")
-
+        
         self.driver.get(ram_webpage)
 
         login_xpath = '//*[@id="login-username-2606"]'
@@ -88,8 +88,23 @@ class AutoRoomBooker():
             except (NoSuchElementException, StaleElementReferenceException):
                 print("day_a_tag errors")
 
+    def pick_two_hours_ahead(self, current_time):
+        time_list = current_time.split(":") 
+        hours = int(time_list[0])
+        mins_str = time_list[1]
 
-    def book_general_practice_room(self, room_name_str):
+        if hours == 23:
+            hours = 1
+        elif hours == 24:
+            hours = 0
+        else:
+            hours += 2
+
+        hours_str = str(hours)
+
+        return f"{hours_str}:{mins_str}"
+
+    def book_general_practice_room(self, room_name_str, start_time):
         g_practice_room_xpath = '//*[@id="left-column"]/h2[1]/a'
         try:
             g_practice_room_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, g_practice_room_xpath)))
@@ -115,11 +130,23 @@ class AutoRoomBooker():
             create_booking_xpath = '//*[@id="function-span"]/p[1]/a'
             create_booking_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, create_booking_xpath)))
             create_booking_element.click()
-            
+
+        time_xpath = '//*[@id="event-starttime"]'
+        time_xpath_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, time_xpath)))
+        time_xpath_element.send_keys(start_time)
+
+        end_time_xpath = '//*[@id="event-endtime"]'
+        end_time_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, end_time_xpath)))
+
+        for i in range(5):
+            end_time_element.send_keys(Keys.BACK_SPACE)
+            print(i)
+
+        end_time_element.send_keys(self.pick_two_hours_ahead(start_time))  
 
 bot = AutoRoomBooker()
 bot.login()
-bot.book_general_practice_room('CK16 (General Practice Room)')
+bot.book_general_practice_room('CK24 (General Practice Room)', "16:00")
 
 
 
