@@ -19,10 +19,12 @@ class NewDateTwoDaysAhead():
         day_difference = total_month_days - today_day #to check if today_date needs to be reset back to 1 or 2 for the new month 
 
         if today_month != 12 and day_difference == 1:
+            print("30")
             today_day = 1
             self.today_month += 1
 
         elif today_month != 12 and day_difference == 0:
+            print("31")
             today_day = 2
             self.today_month += 1
 
@@ -57,3 +59,6 @@ class NewDateTwoDaysAhead():
 
         return current_month_string
 
+date = NewDateTwoDaysAhead()
+print(date.dt_today)
+print(date.get_day_month_year())

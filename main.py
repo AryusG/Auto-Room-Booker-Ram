@@ -1,7 +1,7 @@
 from next_two_days import NewDateTwoDaysAhead
 from dotenv import load_dotenv
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
+from selenium.common.exceptions import ElementNotInteractableException, NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.by import By
@@ -72,7 +72,7 @@ class AutoRoomBooker():
                 month = date_div_split[0]
                 year = date_div_split[1]
 
-            except StaleElementReferenceException:
+            except (StaleElementReferenceException):
                 print("StaleElementReferenceException occured")
             
             time.sleep(0.1)
@@ -104,6 +104,7 @@ class AutoRoomBooker():
 
         return f"{hours_str}:{mins_str}"
 
+
     def book_general_practice_room(self, room_name_str, start_time):
         g_practice_room_xpath = '//*[@id="left-column"]/h2[1]/a'
         try:
@@ -123,7 +124,7 @@ class AutoRoomBooker():
                 print(room_name_element)
                 room_name_element.click()
                 name_room_is_clicked = True
-            except StaleElementReferenceException:    
+            except (ElementNotInteractableException, StaleElementReferenceException):    
                 print('name_room_stale_element_exception')
         
         if name_room_is_clicked:
