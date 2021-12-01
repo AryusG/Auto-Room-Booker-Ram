@@ -1,7 +1,7 @@
 from next_two_days import NewDateTwoDaysAhead
 from dotenv import load_dotenv
 from selenium import webdriver
-from selenium.common.exceptions import ElementNotInteractableException, NoSuchElementException, StaleElementReferenceException
+from selenium.common.exceptions import ElementNotInteractableException, NoSuchElementException, StaleElementReferenceException, TimeoutException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.by import By
@@ -114,53 +114,75 @@ class AutoRoomBooker():
         self.driver.find_element_by_xpath(button_login_xpath).click()
     
 
-    def book_general_practice_room(self, room_name_str):
+    def book_general_practice_room(self, room_list):
         start_time = self.get_current_time()
+        start_time = "14:30" #Change this before launch
 
-        g_practice_room_xpath = '//*[@id="left-column"]/h2[1]/a'
-        try:
-            g_practice_room_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, g_practice_room_xpath)))
-            g_practice_room_element.click()
+        for i in range(len(room_list)):
+            room_name_str = room_list[i]
 
-        except StaleElementReferenceException:
-            pass
-        
-        self.pick_two_days_ahead()
-
-        name_room_is_clicked = False
-        while name_room_is_clicked is False:
+            g_practice_room_xpath = '//*[@id="left-column"]/h2[1]/a'
             try:
-                name_xpath = f"//a[normalize-space()='{room_name_str}']"
-                room_name_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, name_xpath)))
-                print(room_name_element)
-                room_name_element.click()
-                print(f"YAY WE CLICKED {room_name_str}")
-                name_room_is_clicked = True
-            except (ElementNotInteractableException, StaleElementReferenceException):    
-                print('name_room_stale_element_exception')
-        
-        if name_room_is_clicked:
-            create_booking_xpath = '//*[@id="function-span"]/p[1]/a'
-            create_booking_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, create_booking_xpath)))
-            create_booking_element.click()
+                g_practice_room_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, g_practice_room_xpath)))
+                g_practice_room_element.click()
 
-        time_xpath = '//*[@id="event-starttime"]'
-        time_xpath_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, time_xpath)))
-        time_xpath_element.send_keys(start_time)
+            except StaleElementReferenceException:
+                pass
+            
+            time.sleep(1)
 
-        end_time_xpath = '//*[@id="event-endtime"]'
-        end_time_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, end_time_xpath)))
+            self.pick_two_days_ahead()
 
-        for i in range(5):
-            end_time_element.send_keys(Keys.BACK_SPACE)
-            print(i)
+            name_room_is_clicked = False
+            while name_room_is_clicked is False:
+                try:
 
-        end_time_element.send_keys(self.pick_two_hours_ahead(start_time))  
+                    name_xpath = f"//a[normalize-space()='{room_name_str}']"
+                    name_xpath = '//*[@id="chart-row-90"]/div[2]/div/a'
+                    room_name_element = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.XPATH, name_xpath)))
+
+                    print(room_name_element)
+                    room_name_element.click()
+                    print(f"YAY WE CLICKED {room_name_str}")
+                    name_room_is_clicked = True
+                except (ElementNotInteractableException, StaleElementReferenceException):    
+                    print('name_room_stale_element_exception')
+            
+            if name_room_is_clicked:
+                create_booking_xpath = '//*[@id="function-span"]/p[1]/a'
+                create_booking_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, create_booking_xpath)))
+                create_booking_element.click()
+
+            time_xpath = '//*[@id="event-starttime"]'
+            time_xpath_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, time_xpath)))
+            time_xpath_element.send_keys(start_time)
+
+            end_time_xpath = '//*[@id="event-endtime"]'
+            end_time_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, end_time_xpath)))
+
+            for i in range(6):
+                end_time_element.send_keys(Keys.BACK_SPACE)
+
+            end_time_element.send_keys(self.pick_two_hours_ahead(start_time))  
+
+            save_button_xpath = "//input[@id='event-button-save']"
+            save_button_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, save_button_xpath)))
+            
+            if not save_button_element:
+                self.driver.execute_script("window.history.go(-2)")
+            if save_button_element: 
+                print("save button exists")
+
+            
+
+
+preferred_rooms = ['CK21', 'CK22', 'CK23']
+room_list = [f'{room} (General Practice Room)' for room in preferred_rooms]
+
 
 bot = AutoRoomBooker()
-print(bot.get_current_time())
 bot.login()
-bot.book_general_practice_room('CK21 (General Practice Room)')
+bot.book_general_practice_room(room_list)
 
 
 
