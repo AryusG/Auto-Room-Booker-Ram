@@ -115,12 +115,11 @@ class AutoRoomBooker():
         self.driver.find_element_by_xpath(button_login_xpath).click()
     
 
-    def book_general_practice_room(self, room_list):
+    def book_general_practice_room(self, pref_room_list):
         start_time = self.get_current_time()
         start_time = "14:30" #TODO Change this before launch
-
-        g_practice_room_xpath = '//*[@id="left-column"]/h2[1]/a'
         
+        g_practice_room_xpath = '//*[@id="left-column"]/h2[1]/a'
         try:
             g_practice_room_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, g_practice_room_xpath)))
             g_practice_room_element.click()
@@ -128,58 +127,72 @@ class AutoRoomBooker():
         except StaleElementReferenceException:
             pass
         
-        time.sleep(1)
+        time.sleep(.5)
 
         self.pick_two_days_ahead()
+
+        name_room_is_clicked = False
+        while name_room_is_clicked is False:
+            try:
+                room_str = f'{pref_room_list[0]} (General Practice Room)'
+                name_css_sel = f"a[title='{room_str}']"
+                room_name_element = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, name_css_sel)))
+                room_name_element.click()
+                print("ROOM NAME ELEMENT CLICKED")
+                name_room_is_clicked = True
+            except (ElementNotInteractableException, StaleElementReferenceException):    
+                print('name_room_stale_element_exception')
         
+        if name_room_is_clicked:
+            create_booking_xpath = '//*[@id="function-span"]/p[1]/a'
+            create_booking_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, create_booking_xpath)))
+            create_booking_element.click()
 
-        for i in range(len(room_list)):
-            room_str = room_list[i]
-            print(f"ROOM STR = {room_str}")
-            name_room_is_clicked = False
-            while name_room_is_clicked is False:
-                try:
-                    #FIX THIS MESS
-                    name_xpath = f"//a[normalize-space()='{room_str}']"
-                    name_css_sel = f"a[title='{room_str}']"
-                    room_name_element = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, name_css_sel)))
-                    room_name_element.click()
-                    print(f"YAY WE CLICKED")
-                    name_room_is_clicked = True
-                except (ElementNotInteractableException, StaleElementReferenceException):    
-                    print('name_room_stale_element_exception')
+        time_xpath = '//*[@id="event-starttime"]'
+        time_xpath_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, time_xpath)))
+        time_xpath_element.send_keys(start_time)
+
+        end_time_xpath = '//*[@id="event-endtime"]'
+        end_time_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, end_time_xpath)))
+
+        for i in range(6):
+            end_time_element.send_keys(Keys.BACK_SPACE)
+
+        end_time_element.send_keys(self.pick_two_hours_ahead(start_time))  
+
+        save_button_exists = False
+        list_index = 1
+        while not save_button_exists:
+            try:
+                save_button_xpath = "//input[@id='event-button-save']"
+                print("trying")
+                save_button_element = WebDriverWait(self.driver, 1).until(EC.element_to_be_clickable((By.XPATH, save_button_xpath)))
+                print("save button exists", save_button_element)
+                save_button_exists = True
+
+            except TimeoutException:
+                location_xpath = '//*[@id="event-location"]'
+                location_element = self.driver.find_element_by_xpath(location_xpath)
+                location_element.clear()
+                if list_index < len(pref_room_list):
+                    location_element.send_keys(pref_room_list[list_index])
+                    # TODO FIX Down Arrow Bug
+                    rand_click_xpath = '//*[@id="location-description"]/h1'
+                    rand_click_element = self.driver.find_element_by_xpath(rand_click_xpath)
+                    rand_click_element.click()
+                    # location_element.send_keys(Keys.ARROW_DOWN)
+                    time.sleep(1)
+                    list_index += 1
+                else:
+                    print("IndexError")
+                    break
+                
+
+            # self.driver.execute_script("window.history.go(-2)")
             
-            if name_room_is_clicked:
-                create_booking_xpath = '//*[@id="function-span"]/p[1]/a'
-                create_booking_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, create_booking_xpath)))
-                create_booking_element.click()
-
-            time_xpath = '//*[@id="event-starttime"]'
-            time_xpath_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, time_xpath)))
-            time_xpath_element.send_keys(start_time)
-
-            end_time_xpath = '//*[@id="event-endtime"]'
-            end_time_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, end_time_xpath)))
-
-            for i in range(6):
-                end_time_element.send_keys(Keys.BACK_SPACE)
-
-            end_time_element.send_keys(self.pick_two_hours_ahead(start_time))  
-
-            save_button_xpath = "//input[@id='event-button-save']"
-            save_button_element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, save_button_xpath)))
-            
-            if not save_button_element:
-                self.driver.execute_script("window.history.go(-2)")
-            else: 
-                print("save button exists")
-                break
-
-
 
 preferred_rooms = ['CK21', 'T11', 'CK22', 'CK23', 'T34', 'B55']
-complete_name_list = [f'{room} (General Practice Room)' for room in preferred_rooms]
-print(complete_name_list)
+
 # r_xpath_list = []
 
 # for i in range(len(preferred_rooms)):
@@ -203,4 +216,4 @@ print(complete_name_list)
     
 bot = AutoRoomBooker()
 bot.login()
-bot.book_general_practice_room(complete_name_list)
+bot.book_general_practice_room(preferred_rooms)
