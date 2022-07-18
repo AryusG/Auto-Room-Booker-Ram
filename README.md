@@ -7,3 +7,12 @@ If you missed your time window to book by 5-10 minutes, all the rooms will be co
 "How can I not only improve this stressful experience yet to also automatically book rooms without me having to lift a finger?"
 
 This is how this project was born!
+
+### To run
+```python3 main.py```
+
+### Current Version
+.env has my login details which are passed into .login()
+
+
+
